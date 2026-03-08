@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: beeline_postgres
+    environment:
+      POSTGRES_DB: beeline_db
+      POSTGRES_USER: beeline_user
+      POSTGRES_PASSWORD: beeline_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beeline_user -d beeline_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  spark-app:
+    build: .
+    container_name: beeline_spark_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: beeline_db
+      POSTGRES_USER: beeline_user
+      POSTGRES_PASSWORD: beeline_password
+      POSTGRES_PORT: 5432
+    volumes:
+      - ./raw:/app/raw  # монтируем локальную папку raw в /app/raw в контейнере
+      - ./raw_to_postgres.py:/app/raw_to_postgres.py
+    command: ["python", "/app/raw_to_postgres.py"]
+    # Добавляем политику перезапуска на случай ошибок
+    #restart: on-failure
+
+volumes:
+  postgres_data:

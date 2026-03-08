@@ -1,0 +1,5 @@
+pyspark-stubs
+pyspark==3.4.0
+psycopg2-binary==2.9.9 ; python_version < '3.12'
+psycopg==3.1.18 ; python_version >= '3.12'
+pg8000==1.30.5
